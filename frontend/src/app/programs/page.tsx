@@ -1,231 +1,173 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
-import { BookOpen, Leaf, HandHeart, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { BookOpen, Leaf, HandHeart, ArrowRight, ArrowRightCircle, Users } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { EASE_OUT } from "@/lib/motion";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { FADE_UP_SPRING, FADE_IN, STAGGER_CONTAINER } from "@/lib/animations";
 
 const programs = [
   {
     id: "education",
     icon: BookOpen,
-    title: "Education",
-    emoji: "🎓",
-    color: "#4F46E5",
-    bg: "rgba(79,70,229,0.06)",
-    border: "rgba(79,70,229,0.18)",
-    description:
-      "Bridge the education gap by mentoring underprivileged children, running after-school programs, and delivering digital literacy workshops across rural communities.",
-    impact: "2,400+ students reached",
-    volunteers: "120 volunteers",
-    highlights: ["After-school tutoring", "Digital literacy workshops", "Scholarship guidance"],
+    title: "Education Initiative",
+    category: "Youth",
+    status: "Active",
+    color: "bg-blue-500",
+    colorText: "text-blue-500",
+    colorBg: "bg-blue-500/10",
+    description: "Bridge the education gap by mentoring underprivileged children, running after-school programs, and delivering digital literacy workshops.",
+    impact: "2,400+ students",
+    capacity: 85,
+    highlights: ["After-school tutoring", "Digital literacy", "Scholarship guidance"],
   },
   {
     id: "environment",
     icon: Leaf,
-    title: "Environment",
-    emoji: "🌿",
-    color: "#059669",
-    bg: "rgba(5,150,105,0.06)",
-    border: "rgba(5,150,105,0.18)",
-    description:
-      "Drive sustainable change through tree plantation drives, waste management campaigns, and eco-awareness programs that inspire communities to protect their natural heritage.",
-    impact: "5,000+ trees planted",
-    volunteers: "85 volunteers",
+    title: "Environment Action",
+    category: "Climate",
+    status: "Urgent Need",
+    color: "bg-green-500",
+    colorText: "text-green-500",
+    colorBg: "bg-green-500/10",
+    description: "Drive sustainable change through tree plantation drives, waste management campaigns, and eco-awareness programs.",
+    impact: "5,000+ trees",
+    capacity: 45,
     highlights: ["Tree plantation drives", "Waste management", "Eco-awareness camps"],
   },
   {
     id: "community",
     icon: HandHeart,
     title: "Community Support",
-    emoji: "🤝",
-    color: "#DC2626",
-    bg: "rgba(220,38,38,0.06)",
-    border: "rgba(220,38,38,0.18)",
-    description:
-      "Strengthen community bonds through health camps, women empowerment initiatives, senior citizen outreach, and disaster relief support when communities need it most.",
-    impact: "3,200+ families helped",
-    volunteers: "200 volunteers",
-    highlights: ["Health camps", "Women empowerment", "Senior citizen outreach"],
+    category: "Relief",
+    status: "Active",
+    color: "bg-red-500",
+    colorText: "text-red-500",
+    colorBg: "bg-red-500/10",
+    description: "Strengthen community bonds through health camps, women empowerment initiatives, and disaster relief support.",
+    impact: "3,200+ families",
+    capacity: 92,
+    highlights: ["Health camps", "Women empowerment", "Senior outreach"],
   },
 ];
 
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.15, duration: 0.6, ease: EASE_OUT },
-  }),
-};
-
 export default function ProgramsPage() {
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: "var(--color-bg)" }}>
-      <div className="relative z-10">
-        <Navbar />
-      </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Navbar />
 
-      <main className="flex-1 relative z-10" style={{ maxWidth: 1280, margin: "0 auto", width: "100%", padding: "0 20px 80px" }}>
+      <main className="flex-1 w-full max-w-7xl mx-auto px-5 pt-32 pb-24">
         {/* Page Header */}
-        <div className="text-center pt-16 pb-14">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 text-sm font-medium"
-            style={{ background: "rgba(79,70,229,0.1)", color: "#4F46E5", border: "1px solid rgba(79,70,229,0.18)" }}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+          <motion.div 
+            variants={STAGGER_CONTAINER}
+            initial="hidden"
+            animate="visible"
+            className="max-w-2xl"
           >
-            Our Programs
+            <motion.h1 variants={FADE_UP_SPRING} className="font-heading text-4xl md:text-5xl lg:text-6xl text-foreground tracking-tight mb-6">
+              Impact Programs
+            </motion.h1>
+            <motion.p variants={FADE_UP_SPRING} className="text-lg text-muted-foreground leading-relaxed">
+              Discover our flagship initiatives designed to address the most pressing needs of our communities. Every volunteer hour creates ripples of lasting change.
+            </motion.p>
           </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.6, ease: EASE_OUT }}
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "clamp(2rem, 5vw, 3.2rem)",
-              lineHeight: 1.08,
-              letterSpacing: "-0.01em",
-              color: "var(--color-text)",
-              marginBottom: "1rem",
-            }}
-          >
-            Creating Impact That Lasts
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6, ease: EASE_OUT }}
-            className="max-w-lg mx-auto text-center leading-relaxed"
-            style={{ color: "rgba(25,40,55,0.65)", fontSize: "clamp(0.95rem, 2vw, 1.1rem)" }}
-          >
-            Three flagship programs designed to address the most pressing needs of our communities.
-            Every volunteer hour creates ripples of lasting change.
-          </motion.p>
+          <motion.div variants={FADE_IN} initial="hidden" animate="visible">
+            <div className="flex gap-2">
+              <Badge variant="outline" className="px-3 py-1">All Programs</Badge>
+              <Badge variant="default" className="px-3 py-1 bg-surface border-transparent">Active Only</Badge>
+            </div>
+          </motion.div>
         </div>
 
         {/* Program Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {programs.map((program, i) => {
+        <motion.div 
+          variants={STAGGER_CONTAINER}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {programs.map((program) => {
             const Icon = program.icon;
             return (
-              <motion.div
-                key={program.id}
-                custom={i}
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{ y: -8, transition: { duration: 0.25, ease: "easeOut" } }}
-                className="flex flex-col rounded-3xl overflow-hidden cursor-default"
-                style={{
-                  background: "#fff",
-                  border: `1px solid ${program.border}`,
-                  boxShadow: "0 4px 24px rgba(25,40,55,0.06)",
-                }}
-              >
-                {/* Card Top */}
-                <div className="px-7 pt-8 pb-6" style={{ background: program.bg }}>
-                  <div
-                    className="flex items-center justify-center rounded-2xl mb-5"
-                    style={{
-                      width: 56,
-                      height: 56,
-                      background: `${program.color}18`,
-                      border: `1.5px solid ${program.color}30`,
-                    }}
-                  >
-                    <Icon size={26} color={program.color} />
-                  </div>
-                  <h2
-                    className="font-bold mb-1"
-                    style={{ fontFamily: "var(--font-heading)", fontSize: "1.45rem", color: "var(--color-text)" }}
-                  >
-                    {program.emoji} {program.title}
-                  </h2>
-                  <div className="flex gap-3 flex-wrap mt-2">
-                    <span
-                      className="text-xs font-medium px-3 py-1 rounded-full"
-                      style={{ background: `${program.color}15`, color: program.color }}
-                    >
-                      {program.impact}
-                    </span>
-                    <span
-                      className="text-xs font-medium px-3 py-1 rounded-full"
-                      style={{ background: "rgba(25,40,55,0.06)", color: "rgba(25,40,55,0.6)" }}
-                    >
-                      {program.volunteers}
-                    </span>
-                  </div>
-                </div>
+              <motion.div key={program.id} variants={FADE_UP_SPRING}>
+                <Card hoverable className="h-full flex flex-col group relative overflow-hidden bg-surface">
+                  {/* Subtle top border gradient mapping to the program color */}
+                  <div className={`absolute top-0 inset-x-0 h-1 opacity-50 group-hover:opacity-100 transition-opacity ${program.color}`} />
+                  
+                  <div className="p-8 flex flex-col flex-1">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${program.colorBg} ${program.colorText}`}>
+                        <Icon size={24} />
+                      </div>
+                      <Badge variant={program.status === "Urgent Need" ? "error" : "success"}>
+                        {program.status}
+                      </Badge>
+                    </div>
 
-                {/* Card Body */}
-                <div className="flex flex-col flex-1 px-7 py-6 gap-5">
-                  <p style={{ color: "rgba(25,40,55,0.7)", fontSize: "0.9rem", lineHeight: 1.65 }}>
-                    {program.description}
-                  </p>
+                    <div className="mb-4">
+                      <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">{program.category}</p>
+                      <h2 className="font-heading text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                        {program.title}
+                      </h2>
+                    </div>
 
-                  <ul className="flex flex-col gap-2">
-                    {program.highlights.map((h) => (
-                      <li key={h} className="flex items-center gap-2.5 text-sm" style={{ color: "rgba(25,40,55,0.75)" }}>
-                        <span
-                          className="flex-shrink-0 rounded-full"
-                          style={{ width: 6, height: 6, background: program.color }}
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
+                      {program.description}
+                    </p>
+
+                    {/* Progress / Capacity Indicator */}
+                    <div className="mb-8">
+                      <div className="flex justify-between text-xs font-medium mb-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Users size={14}/> Volunteer Capacity</span>
+                        <span className="text-foreground">{program.capacity}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${program.capacity}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className={`h-full rounded-full ${program.color}`}
                         />
-                        {h}
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    </div>
 
-                  <div className="mt-auto pt-2">
-                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                      <Link
-                        href="/register"
-                        id={`program-cta-${program.id}`}
-                        className="flex items-center gap-2 text-sm font-semibold"
-                        style={{ color: program.color }}
-                      >
-                        Volunteer for this →
-                        <ArrowRight size={15} />
+                    <div className="mt-auto">
+                      <Link href="/register" className="w-full block">
+                        <Button variant="outline" className="w-full justify-between group-hover:border-primary group-hover:text-primary transition-colors">
+                          Join Initiative <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                        </Button>
                       </Link>
-                    </motion.div>
+                    </div>
                   </div>
-                </div>
+                </Card>
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Bottom CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65, duration: 0.6, ease: EASE_OUT }}
-          className="text-center mt-16"
+          variants={FADE_IN}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="mt-24 text-center"
         >
-          <p className="text-sm mb-5" style={{ color: "rgba(25,40,55,0.55)" }}>
-            Ready to make a difference?
-          </p>
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-            <Link
-              href="/register"
-              id="programs-register-cta"
-              className="inline-flex items-center gap-3 text-white font-semibold rounded-full"
-              style={{
-                background: "#4F46E5",
-                padding: "16px 32px",
-                fontSize: "0.95rem",
-                boxShadow: "0 4px 24px rgba(79,70,229,0.28)",
-              }}
-            >
-              Register as a Volunteer
-              <ArrowRight size={18} />
+          <Card glass className="max-w-2xl mx-auto p-12 bg-primary/5 border-primary/10 flex flex-col items-center text-center">
+            <h2 className="font-heading text-2xl md:text-3xl mb-3 text-foreground tracking-tight">Ready to make a difference?</h2>
+            <p className="text-muted-foreground mb-8">Join thousands of others making a real impact every day.</p>
+            <Link href="/register">
+              <Button size="lg" className="px-8">
+                Create Volunteer Account
+              </Button>
             </Link>
-          </motion.div>
+          </Card>
         </motion.div>
       </main>
 

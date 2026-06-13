@@ -74,7 +74,7 @@ try {
     http_response_code(201);
     echo json_encode([
         'success' => true,
-        'message' => 'Registration successful. Welcome to VolunteerHub!',
+        'message' => 'Registration successful. Welcome to CommunityConnect!',
         'id'      => (int) $id,
     ]);
 } catch (PDOException $e) {

@@ -1,58 +1,56 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Users, UserCheck, TrendingUp, Calendar, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { motion, useSpring, useTransform, animate } from "framer-motion";
+import { Users, UserCheck, Mail, Target, Lock, Eye, EyeOff, RefreshCw, Search, ChevronLeft, ChevronRight, Activity, AlertCircle, SearchX } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { EASE_OUT } from "@/lib/motion";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { FADE_UP_SPRING, FADE_IN, STAGGER_CONTAINER } from "@/lib/animations";
+
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin2024";
+const COLORS = ["#000000", "#3291FF", "#7928CA", "#F5A623", "#FF0080", "#50E3C2"];
 
 interface Volunteer {
   id: number;
   name: string;
   email: string;
-  phone: string;
-  skills: string;
-  availability: string;
   area_of_interest: string;
   created_at: string;
 }
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin2024";
-
-const skillColors: Record<string, string> = {
-  Teaching: "#4F46E5",
-  Coding: "#7C3AED",
-  Design: "#EC4899",
-  Healthcare: "#059669",
-  Legal: "#D97706",
-  Marketing: "#0EA5E9",
-  Photography: "#F59E0B",
-};
-
-function getSkillColor(skill: string) {
-  return skillColors[skill] || "#6B7280";
+interface DashboardStats {
+  monthly_registrations: { name: string; volunteers: number }[];
+  program_distribution: { name: string; value: number }[];
+  recent_activity: Volunteer[];
 }
 
-function SkillBar({ skill, count, max }: { skill: string; count: number; max: number }) {
-  const pct = Math.round((count / max) * 100);
-  const color = getSkillColor(skill);
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex justify-between text-xs" style={{ color: "rgba(25,40,55,0.65)" }}>
-        <span className="font-medium" style={{ color: "var(--color-text)" }}>{skill}</span>
-        <span>{count} volunteers</span>
-      </div>
-      <div className="rounded-full overflow-hidden" style={{ height: 8, background: "rgba(25,40,55,0.07)" }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, ease: EASE_OUT }}
-          style={{ height: "100%", background: color, borderRadius: 9999 }}
-        />
-      </div>
-    </div>
-  );
+interface KPIStats {
+  total_volunteers: number;
+  active_programs: number;
+  contact_requests: number;
+}
+
+// Custom hook for animated counting
+function AnimatedCounter({ value }: { value: number | string }) {
+  const numValue = typeof value === "string" ? parseInt(value.toString().replace(/,/g, '')) || 0 : value;
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(displayValue, numValue, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (v) => setDisplayValue(Math.floor(v)),
+    });
+    return controls.stop;
+  }, [numValue]);
+
+  return <span>{displayValue.toLocaleString()}</span>;
 }
 
 export default function DashboardPage() {
@@ -60,21 +58,36 @@ export default function DashboardPage() {
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [pwdError, setPwdError] = useState("");
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [kpis, setKpis] = useState<KPIStats | null>(null);
 
-  const fetchVolunteers = useCallback(async () => {
+  // Table state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${API_URL}/api/volunteers.php`);
-      const data = await res.json();
-      if (data.success) {
-        setVolunteers(data.volunteers || []);
+      const [statsRes, kpiRes] = await Promise.all([
+        fetch(`${API_URL}/api/dashboard-stats.php`),
+        fetch(`${API_URL}/api/stats.php`)
+      ]);
+
+      const statsData = await statsRes.json();
+      const kpiData = await kpiRes.json();
+
+      if (statsData.success && kpiData.success) {
+        setStats(statsData.data);
+        setKpis(kpiData.data);
       } else {
-        setError(data.message || "Failed to fetch data.");
+        setError("Failed to fetch dashboard data.");
       }
     } catch {
       setError("Cannot connect to backend. Make sure PHP server is running.");
@@ -84,8 +97,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (authed) fetchVolunteers();
-  }, [authed, fetchVolunteers]);
+    if (authed) fetchData();
+  }, [authed, fetchData]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,110 +106,59 @@ export default function DashboardPage() {
       setAuthed(true);
       setPwdError("");
     } else {
-      setPwdError("Incorrect password. Please try again.");
+      setPwdError("Incorrect admin password.");
     }
   };
 
-  // Compute skill distribution
-  const skillDist: Record<string, number> = {};
-  volunteers.forEach((v) => {
-    if (!v.skills) return;
-    v.skills.split(",").forEach((s) => {
-      const sk = s.trim();
-      if (sk) skillDist[sk] = (skillDist[sk] || 0) + 1;
-    });
-  });
-  const sortedSkills = Object.entries(skillDist)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
-  const maxSkillCount = sortedSkills[0]?.[1] || 1;
+  const filteredActivity = useMemo(() => {
+    if (!stats?.recent_activity) return [];
+    if (!searchQuery) return stats.recent_activity;
+    const lowerQuery = searchQuery.toLowerCase();
+    return stats.recent_activity.filter(
+      v => v.name.toLowerCase().includes(lowerQuery) || 
+           v.email.toLowerCase().includes(lowerQuery) || 
+           (v.area_of_interest && v.area_of_interest.toLowerCase().includes(lowerQuery))
+    );
+  }, [stats, searchQuery]);
 
-  // Recent 5
-  const recent = [...volunteers].reverse().slice(0, 5);
+  const totalPages = Math.ceil(filteredActivity.length / itemsPerPage) || 1;
+  const currentActivity = filteredActivity.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Area distribution
-  const areaDist: Record<string, number> = {};
-  volunteers.forEach((v) => {
-    if (v.area_of_interest) areaDist[v.area_of_interest] = (areaDist[v.area_of_interest] || 0) + 1;
-  });
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   if (!authed) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ background: "var(--color-bg)" }}>
-        <div className="relative z-10">
-          <Navbar />
-        </div>
-        <main className="flex-1 flex items-center justify-center px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE_OUT }}
-            className="w-full max-w-sm"
-          >
-            <div
-              className="rounded-3xl p-8"
-              style={{ background: "#fff", border: "1px solid rgba(25,40,55,0.1)", boxShadow: "0 8px 40px rgba(25,40,55,0.08)" }}
-            >
-              <div className="flex flex-col items-center mb-7">
-                <div
-                  className="flex items-center justify-center rounded-2xl mb-4"
-                  style={{ width: 56, height: 56, background: "rgba(79,70,229,0.1)", border: "1.5px solid rgba(79,70,229,0.2)" }}
-                >
-                  <Lock size={24} color="#4F46E5" />
+      <div className="flex flex-col min-h-screen bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center px-5 relative z-10">
+          <motion.div variants={FADE_UP_SPRING} initial="hidden" animate="visible" className="w-full max-w-sm">
+            <Card className="p-8">
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-12 h-12 rounded-xl bg-surface-hover border border-border flex items-center justify-center mb-4">
+                  <Lock size={20} className="text-foreground" />
                 </div>
-                <h1
-                  style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", color: "var(--color-text)", textAlign: "center" }}
-                >
-                  Admin Dashboard
-                </h1>
-                <p className="text-sm mt-1 text-center" style={{ color: "rgba(25,40,55,0.55)" }}>
-                  Enter admin password to continue
-                </p>
+                <h1 className="font-heading text-2xl text-foreground text-center">Admin Access</h1>
+                <p className="text-sm mt-1 text-muted-foreground text-center">Enter operator credentials</p>
               </div>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <div className="relative">
-                  <input
-                    id="dashboard-password"
-                    type={showPwd ? "text" : "password"}
-                    placeholder="Admin password"
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl text-sm pr-11 outline-none"
-                    style={{
-                      background: "rgba(25,40,55,0.05)",
-                      border: `1.5px solid ${pwdError ? "rgba(220,38,38,0.4)" : "rgba(25,40,55,0.12)"}`,
-                      color: "var(--color-text)",
-                    }}
+                  <Input
+                    id="dashboard-password" type={showPwd ? "text" : "password"}
+                    label="Master Password" placeholder="••••••••"
+                    value={pwd} onChange={(e) => setPwd(e.target.value)}
+                    error={pwdError}
                   />
                   <button
-                    type="button"
-                    onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    aria-label="Toggle password visibility"
+                    type="button" onClick={() => setShowPwd(!showPwd)}
+                    className="absolute right-3 top-9 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPwd ? <EyeOff size={16} color="rgba(25,40,55,0.45)" /> : <Eye size={16} color="rgba(25,40,55,0.45)" />}
+                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-
-                {pwdError && (
-                  <p className="text-xs" style={{ color: "#DC2626" }}>
-                    {pwdError}
-                  </p>
-                )}
-
-                <motion.button
-                  id="dashboard-login-btn"
-                  type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="text-white font-semibold rounded-full py-3"
-                  style={{ background: "#4F46E5", fontSize: "0.9rem" }}
-                >
-                  Access Dashboard
-                </motion.button>
+                <Button type="submit" className="w-full mt-2">Authenticate</Button>
               </form>
-            </div>
+            </Card>
           </motion.div>
         </main>
         <Footer />
@@ -205,154 +167,189 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: "var(--color-bg)" }}>
-      <div className="relative z-10">
-        <Navbar />
-      </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Navbar />
 
-      <main
-        className="flex-1 relative z-10 py-12 px-5"
-        style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}
-      >
+      <main className="flex-1 w-full max-w-7xl mx-auto px-5 py-24 mt-12">
         {/* Header */}
-        <div className="flex items-center justify-between mb-10 flex-wrap gap-4">
-          <div>
-            <h1
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "clamp(1.6rem, 3vw, 2.4rem)",
-                color: "var(--color-text)",
-                lineHeight: 1.1,
-              }}
-            >
-              Admin Dashboard
-            </h1>
-            <p className="mt-1 text-sm" style={{ color: "rgba(25,40,55,0.55)" }}>
-              VolunteerHub AI · Community Platform
-            </p>
-          </div>
-          <motion.button
-            id="dashboard-refresh"
-            onClick={fetchVolunteers}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
-            style={{
-              background: "#fff",
-              border: "1.5px solid rgba(25,40,55,0.12)",
-              color: "var(--color-text)",
-              boxShadow: "0 2px 8px rgba(25,40,55,0.06)",
-            }}
-          >
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </motion.button>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+          <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="visible">
+            <motion.h1 variants={FADE_UP_SPRING} className="font-heading text-3xl md:text-4xl tracking-tight mb-2">Operations Dashboard</motion.h1>
+            <motion.p variants={FADE_UP_SPRING} className="text-muted-foreground font-mono text-sm uppercase tracking-widest flex items-center gap-2">
+              <Activity size={14} className="text-success" /> Live System Metrics
+            </motion.p>
+          </motion.div>
+          <motion.div variants={FADE_IN} initial="hidden" animate="visible">
+            <Button variant="secondary" onClick={fetchData} isLoading={loading} leftIcon={<RefreshCw size={14}/>}>
+              Sync Data
+            </Button>
+          </motion.div>
         </div>
 
         {error && (
-          <div
-            className="px-4 py-3 rounded-xl text-sm mb-8"
-            style={{ background: "rgba(220,38,38,0.08)", border: "1.5px solid rgba(220,38,38,0.2)", color: "#DC2626" }}
-          >
-            ⚠️ {error}
+          <div className="px-4 py-3 rounded-xl text-sm mb-8 bg-error/10 border border-error/20 text-error flex items-center gap-2">
+            <AlertCircle size={16} /> {error}
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* KPIs */}
+        <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="visible" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { icon: Users, label: "Total Volunteers", value: volunteers.length, color: "#4F46E5" },
-            { icon: UserCheck, label: "This Month", value: volunteers.filter((v) => new Date(v.created_at).getMonth() === new Date().getMonth()).length, color: "#059669" },
-            { icon: TrendingUp, label: "Skills Offered", value: Object.keys(skillDist).length, color: "#7C3AED" },
-            { icon: Calendar, label: "Active Areas", value: Object.keys(areaDist).length, color: "#D97706" },
+            { icon: Users, label: "Total Volunteers", value: kpis?.total_volunteers },
+            { icon: UserCheck, label: "New This Month", value: stats?.monthly_registrations[stats.monthly_registrations.length-1]?.volunteers },
+            { icon: Target, label: "Active Programs", value: kpis?.active_programs },
+            { icon: Mail, label: "Contact Requests", value: kpis?.contact_requests },
           ].map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, duration: 0.5, ease: EASE_OUT }}
-                className="rounded-2xl p-5"
-                style={{ background: "#fff", border: "1px solid rgba(25,40,55,0.08)", boxShadow: "0 2px 12px rgba(25,40,55,0.05)" }}
-              >
-                <div
-                  className="flex items-center justify-center rounded-xl mb-3"
-                  style={{ width: 40, height: 40, background: `${stat.color}12` }}
-                >
-                  <Icon size={18} color={stat.color} />
-                </div>
-                <p
-                  style={{ fontFamily: "var(--font-heading)", fontSize: "1.8rem", color: "var(--color-text)", lineHeight: 1 }}
-                >
-                  {loading ? "—" : stat.value}
-                </p>
-                <p className="mt-1 text-xs" style={{ color: "rgba(25,40,55,0.5)" }}>
-                  {stat.label}
-                </p>
+              <motion.div key={i} variants={FADE_UP_SPRING}>
+                <Card hoverable className="p-6 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-4 text-muted-foreground">
+                    <span className="text-sm font-medium">{stat.label}</span>
+                    <Icon size={16} />
+                  </div>
+                  <div className="font-heading text-3xl text-foreground">
+                    {stat.value === undefined ? "—" : <AnimatedCounter value={stat.value} />}
+                  </div>
+                </Card>
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Registrations */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.6 }}
-            className="lg:col-span-2 rounded-2xl"
-            style={{ background: "#fff", border: "1px solid rgba(25,40,55,0.08)", boxShadow: "0 2px 12px rgba(25,40,55,0.05)" }}
-          >
-            <div className="px-6 py-5 border-b" style={{ borderColor: "rgba(25,40,55,0.07)" }}>
-              <h2 className="font-semibold" style={{ fontSize: "0.95rem", color: "var(--color-text)" }}>
-                Recent Registrations
-              </h2>
+        {/* Charts */}
+        <motion.div variants={STAGGER_CONTAINER} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <motion.div variants={FADE_UP_SPRING} className="lg:col-span-2">
+            <Card className="h-full flex flex-col">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="font-semibold text-sm">Volunteer Growth Trajectory</h2>
+              </div>
+              <div className="p-6 flex-1 min-h-[300px]">
+                {stats?.monthly_registrations ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stats.monthly_registrations}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} dx={-10} />
+                      <Tooltip 
+                        contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", boxShadow: "var(--shadow-md)" }}
+                        itemStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+                      />
+                      <Line type="monotone" dataKey="volunteers" stroke="var(--primary)" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "var(--primary)", stroke: "var(--surface)", strokeWidth: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-end gap-4 px-2 pb-6">
+                    <Skeleton className="h-4/5 w-full rounded-xl" />
+                    <div className="flex justify-between gap-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={FADE_UP_SPRING}>
+            <Card className="h-full flex flex-col">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="font-semibold text-sm">Program Distribution</h2>
+              </div>
+              <div className="p-6 flex-1 min-h-[300px]">
+                {stats?.program_distribution ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.program_distribution}
+                        cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value"
+                      >
+                        {stats.program_distribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", boxShadow: "var(--shadow-md)" }}
+                        itemStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Skeleton className="w-48 h-48 rounded-full" />
+                  </div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        {/* Data Table */}
+        <motion.div variants={FADE_UP_SPRING} initial="hidden" animate="visible">
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-hover/30">
+              <h2 className="font-semibold text-sm">Recent Volunteers Index</h2>
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <input
+                  type="text" placeholder="Search records..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-surface border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                />
+              </div>
             </div>
+            
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ background: "rgba(25,40,55,0.02)" }}>
-                    {["Name", "Email", "Area", "Joined"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-3 text-left font-medium"
-                        style={{ color: "rgba(25,40,55,0.45)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}
-                      >
-                        {h}
-                      </th>
-                    ))}
+                  <tr className="bg-surface-hover/50 border-b border-border text-muted-foreground">
+                    <th className="px-6 py-3 text-left font-mono text-xs uppercase tracking-wider font-semibold">Name</th>
+                    <th className="px-6 py-3 text-left font-mono text-xs uppercase tracking-wider font-semibold">Email</th>
+                    <th className="px-6 py-3 text-left font-mono text-xs uppercase tracking-wider font-semibold">Sector</th>
+                    <th className="px-6 py-3 text-left font-mono text-xs uppercase tracking-wider font-semibold">Timestamp</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={`skel-${i}`}>
+                        <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-5 w-48" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
+                      </tr>
+                    ))
+                  ) : currentActivity.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-sm" style={{ color: "rgba(25,40,55,0.4)" }}>
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : recent.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-sm" style={{ color: "rgba(25,40,55,0.4)" }}>
-                        No volunteers registered yet.
+                      <td colSpan={4} className="px-6 py-16">
+                        <div className="flex flex-col items-center text-center">
+                          <div className="w-16 h-16 rounded-2xl bg-surface-hover flex items-center justify-center mb-4">
+                            <SearchX size={32} className="text-muted-foreground" />
+                          </div>
+                          <h3 className="font-heading text-lg text-foreground mb-2 tracking-tight">No records found</h3>
+                          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                            We couldn't find any volunteers matching "{searchQuery}". Try adjusting your search query.
+                          </p>
+                          {searchQuery && (
+                            <Button variant="outline" size="sm" className="mt-6" onClick={() => setSearchQuery("")}>
+                              Clear search
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    recent.map((v) => (
-                      <tr key={v.id} className="border-t transition-colors hover:bg-gray-50/60" style={{ borderColor: "rgba(25,40,55,0.06)" }}>
-                        <td className="px-6 py-4 font-medium" style={{ color: "var(--color-text)" }}>{v.name}</td>
-                        <td className="px-6 py-4" style={{ color: "rgba(25,40,55,0.6)" }}>{v.email}</td>
+                    currentActivity.map((v) => (
+                      <tr key={v.id} className="transition-colors hover:bg-surface-hover">
+                        <td className="px-6 py-4 font-medium text-foreground">{v.name}</td>
+                        <td className="px-6 py-4 text-muted-foreground">{v.email}</td>
                         <td className="px-6 py-4">
-                          <span
-                            className="px-2.5 py-1 rounded-full text-xs font-medium"
-                            style={{ background: "rgba(79,70,229,0.1)", color: "#4F46E5" }}
-                          >
-                            {v.area_of_interest || "—"}
-                          </span>
+                          <Badge variant="outline">{v.area_of_interest || "Unassigned"}</Badge>
                         </td>
-                        <td className="px-6 py-4 text-xs" style={{ color: "rgba(25,40,55,0.5)" }}>
-                          {new Date(v.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        <td className="px-6 py-4 text-xs font-mono text-muted-foreground">
+                          {new Date(v.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                         </td>
                       </tr>
                     ))
@@ -360,34 +357,25 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-          </motion.div>
-
-          {/* Skill Distribution */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.6 }}
-            className="rounded-2xl"
-            style={{ background: "#fff", border: "1px solid rgba(25,40,55,0.08)", boxShadow: "0 2px 12px rgba(25,40,55,0.05)" }}
-          >
-            <div className="px-6 py-5 border-b" style={{ borderColor: "rgba(25,40,55,0.07)" }}>
-              <h2 className="font-semibold" style={{ fontSize: "0.95rem", color: "var(--color-text)" }}>
-                Skill Distribution
-              </h2>
-            </div>
-            <div className="px-6 py-5 flex flex-col gap-4">
-              {loading ? (
-                <p className="text-sm text-center py-4" style={{ color: "rgba(25,40,55,0.4)" }}>Loading...</p>
-              ) : sortedSkills.length === 0 ? (
-                <p className="text-sm text-center py-4" style={{ color: "rgba(25,40,55,0.4)" }}>No skill data yet.</p>
-              ) : (
-                sortedSkills.map(([skill, count]) => (
-                  <SkillBar key={skill} skill={skill} count={count} max={maxSkillCount} />
-                ))
-              )}
-            </div>
-          </motion.div>
-        </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-3 border-t border-border flex items-center justify-between bg-surface-hover/30">
+                <p className="text-xs text-muted-foreground font-mono">
+                  Rows {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredActivity.length)} of {filteredActivity.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                    <ChevronLeft size={16} />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        </motion.div>
       </main>
 
       <Footer />

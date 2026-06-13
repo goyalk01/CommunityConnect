@@ -1,48 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
+import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "./ui/Button";
 
 const navLinks = [
-  { label: "Home", href: "/" },
   { label: "Programs", href: "/programs" },
-  { label: "Register", href: "/register" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Contact", href: "/contact" },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  const { scrollY } = useScroll();
+  const navBackground = useTransform(
+    scrollY,
+    [0, 50],
+    ["rgba(var(--background-rgb), 0)", "var(--surface)"] // Will refine with CSS classes
+  );
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
-      <nav
-        className="relative z-10"
-        style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}
+      <motion.nav
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b ${
+          isScrolled 
+            ? "bg-surface/80 backdrop-blur-xl border-border shadow-sm py-3" 
+            : "bg-transparent border-transparent py-5"
+        }`}
       >
-        <div className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-between">
           {/* Left: Logo + Brand */}
-          <Link href="/" className="flex items-center gap-2.5 select-none">
-            <Logo size={32} />
-            <span
-              className="font-semibold hidden sm:block"
-              style={{ fontSize: "0.95rem", color: "var(--color-text)", letterSpacing: "-0.01em" }}
-            >
-              VolunteerHub AI
+          <Link href="/" className="flex items-center gap-3 select-none group">
+            <motion.div whileHover={{ rotate: 10, scale: 1.05 }}>
+              <Logo size={28} />
+            </motion.div>
+            <span className="font-semibold text-lg tracking-tight hidden sm:block text-foreground group-hover:opacity-80 transition-opacity">
+              CommunityConnect
             </span>
           </Link>
 
           {/* Center: Nav Links (desktop) */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium transition-opacity hover:opacity-70"
-                style={{ color: "var(--color-text)" }}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>
@@ -50,41 +68,32 @@ export default function Navbar() {
           </div>
 
           {/* Right: CTA Buttons (desktop) */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/register"
-              className="text-sm font-semibold text-white rounded-full transition-all hover:shadow-lg active:scale-95"
-              style={{
-                background: "#4F46E5",
-                padding: "10px 20px",
-              }}
-            >
-              Join as Volunteer
-            </Link>
-            <Link
-              href="/contact"
-              className="text-sm font-semibold rounded-full transition-all hover:bg-gray-200 active:scale-95"
-              style={{
-                background: "#F2F2EE",
-                color: "var(--color-text)",
-                padding: "10px 20px",
-              }}
-            >
-              Contact Us
-            </Link>
+          <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <Link href="/contact" tabIndex={-1}>
+                <Button variant="ghost" size="sm">Log in</Button>
+              </Link>
+              <Link href="/register" tabIndex={-1}>
+                <Button variant="primary" size="sm">Get Started</Button>
+              </Link>
+            </div>
           </div>
 
           {/* Hamburger (mobile) */}
-          <button
-            id="navbar-mobile-menu-btn"
-            className="md:hidden flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-black/10"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open navigation menu"
-          >
-            <Menu size={24} color="#192837" />
-          </button>
+          <div className="md:hidden flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              id="navbar-mobile-menu-btn"
+              className="flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-hover text-foreground"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
-      </nav>
+      </motion.nav>
 
       <MobileMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
     </>

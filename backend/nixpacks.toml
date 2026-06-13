@@ -1,5 +1,24 @@
+# Nixpacks Configuration for CommunityConnect PHP Backend
+# This configuration is optimized for Railway.app deployments
+
+providers = ["php"]
+
 [phases.setup]
-nixPkgs = ["php"]
+# Enforce PHP 8.3 for performance and strict typing compatibility
+nixPkgs = ["php83"]
+
+[variables]
+# The built-in PHP server is single-threaded by default.
+# Setting PHP_CLI_SERVER_WORKERS allows it to handle concurrent requests
+# which drastically improves performance in a deployed environment!
+PHP_CLI_SERVER_WORKERS = "4"
+
+[phases.build]
+cmds = [
+  "echo 'Preparing CommunityConnect Backend...'",
+  "php -v"
+]
 
 [start]
+# Start the PHP server dynamically bound to the environment PORT
 cmd = "php -S 0.0.0.0:$PORT"

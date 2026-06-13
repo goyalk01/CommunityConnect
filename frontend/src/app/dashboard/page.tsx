@@ -74,10 +74,9 @@ export default function DashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const [statsRes, kpiRes] = await Promise.all([
-        fetch(`${API_URL}/api/dashboard-stats.php`),
-        fetch(`${API_URL}/api/stats.php`)
+        fetch(`/api/dashboard-stats.php`),
+        fetch(`/api/stats.php`)
       ]);
 
       const statsData = await statsRes.json();

@@ -69,8 +69,7 @@ export default function RegisterPage() {
     }
     setStatus("loading");
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${API_URL}/api/register.php`, {
+      const res = await fetch(`/api/register.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

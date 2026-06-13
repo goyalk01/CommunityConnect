@@ -18,7 +18,7 @@ interface Volunteer {
   created_at: string;
 }
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "nayepankh2024";
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin2024";
 
 const skillColors: Record<string, string> = {
   Teaching: "#4F46E5",
@@ -228,7 +228,7 @@ export default function DashboardPage() {
               Admin Dashboard
             </h1>
             <p className="mt-1 text-sm" style={{ color: "rgba(25,40,55,0.55)" }}>
-              VolunteerHub AI · NayePankh NGO
+              VolunteerHub AI · Community Platform
             </p>
           </div>
           <motion.button

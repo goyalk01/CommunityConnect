@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VolunteerHub AI — NGO Volunteer Management Platform",
+  title: "VolunteerHub AI — Community Management Platform",
   description:
-    "Connect passionate volunteers with meaningful causes. VolunteerHub AI helps NGOs manage volunteers, programs, and community impact — all in one place.",
-  keywords: "NGO, volunteer management, community, NayePankh, social impact",
+    "Connect passionate volunteers with meaningful causes. VolunteerHub AI helps community initiatives manage volunteers, programs, and community impact — all in one place.",
+  keywords: "community, volunteer management, social impact, organization",
   openGraph: {
     title: "VolunteerHub AI",
     description: "Connect passionate volunteers with meaningful causes.",

@@ -112,15 +112,15 @@ export default function ContactPage() {
                 className="font-bold mb-2"
                 style={{ fontFamily: "var(--font-heading)", fontSize: "1.3rem" }}
               >
-                NayePankh NGO
+                Community Initiative
               </h2>
               <p className="text-sm mb-6" style={{ opacity: 0.8, lineHeight: 1.65 }}>
-                Creating new wings of hope for underprivileged communities across India.
+                Creating new wings of hope for communities and fostering sustainable growth.
               </p>
 
               {[
                 { icon: MapPin, label: "Address", value: "New Delhi, India" },
-                { icon: Mail, label: "Email", value: "hello@nayepankh.org" },
+                { icon: Mail, label: "Email", value: "hello@volunteerhub.local" },
                 { icon: Phone, label: "Phone", value: "+91 98765 43210" },
               ].map((item) => {
                 const Icon = item.icon;

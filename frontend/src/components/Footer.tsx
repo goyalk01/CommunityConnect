@@ -27,7 +27,7 @@ export default function Footer() {
             style={{ color: "rgba(25,40,55,0.6)" }}
           >
             Empowering communities through smart volunteer management.
-            Built for NayePankh NGO.
+            Built for community organizations.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function Footer() {
           fontSize: "0.8rem",
         }}
       >
-        © {new Date().getFullYear()} VolunteerHub AI · NayePankh NGO. All rights reserved.
+        © {new Date().getFullYear()} VolunteerHub AI. All rights reserved.
       </div>
     </footer>
   );

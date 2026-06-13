@@ -1,4 +1,4 @@
--- VolunteerHub AI — Aiven MySQL Schema
+-- VolunteerHub AI — MySQL Schema
 -- Run this file once to initialize the database tables.
 
 CREATE DATABASE IF NOT EXISTS volunteerhub

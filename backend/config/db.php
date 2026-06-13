@@ -24,7 +24,6 @@ function getDB(): PDO {
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,  // Aiven requires SSL but skips cert verify
     ];
 
     return new PDO($dsn, $user, $pass, $options);

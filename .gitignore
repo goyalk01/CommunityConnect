@@ -1,0 +1,47 @@
+# Node
+node_modules
+.next
+out
+dist
+coverage
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.production
+.env.development
+backend/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/*
+*.swp
+
+# Logs
+logs
+*.log
+
+# Deployment
+.vercel
+.turbo
+
+# PHP
+vendor
+
+# Temporary
+tmp
+temp
+*.tmp
+
+# Secrets
+credentials
+passwords
+API keys
+database connection strings
